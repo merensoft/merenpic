@@ -103,8 +103,24 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		photoFilePath := fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
 
 		if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
-			fmt.Printf("\nPhoto file: %s does not exist, skipping...\n", photoFilePath)
-			continue
+			// edge case where the photo name has (1) suffix
+			// example photo(1).jpg and photo.jpg(1).json
+			// we should be able to handle this case, by moving the photo with (1) suffix
+			// and moving json with better subfix: photo(1).jpg.json
+			if strings.Contains(file, "(1).json") {
+				photoName = strings.TrimSuffix(photoName, "(1)")
+				splitName := strings.Split(photoName, ".")
+				photoName = fmt.Sprintf("%s(1).%s", splitName[0], splitName[1])
+				photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
+
+				if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
+					fmt.Printf("\nPhoto file: %s does not exist, skipping...\n", photoFilePath)
+					continue
+				}
+			} else {
+				fmt.Printf("\nPhoto file: %s does not exist, skipping...\n", photoFilePath)
+				continue
+			}
 		}
 
 		// move the photo file to the subdirectory
@@ -112,7 +128,7 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		ExitIfError(err)
 
 		// move the metadata file to the subdirectory if photo file was moved
-		err = os.Rename(filePath, fmt.Sprintf("%s/%s", subDirName, file))
+		err = os.Rename(filePath, fmt.Sprintf("%s/%s.json", subDirName, photoName))
 		ExitIfError(err)
 
 		err = bar.Add(1)
