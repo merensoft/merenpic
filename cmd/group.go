@@ -3,7 +3,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -44,23 +46,8 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 	}
 
 	// find all the files in the folder
-	files, err := os.ReadDir(groupFlags.folder)
+	jsonFiles, err := walkDir(groupFlags.folder, "json")
 	ExitIfError(err)
-
-	// filter out only the json files
-	var jsonFiles []string
-
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-
-		if !strings.HasSuffix(file.Name(), ".json") {
-			continue
-		}
-
-		jsonFiles = append(jsonFiles, file.Name())
-	}
 
 	fmt.Printf("Found %d json files in the folder\n", len(jsonFiles))
 
@@ -135,4 +122,26 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 	}
 
 	fmt.Println("\nGroup Command Completed")
+}
+
+func walkDir(root string, extension string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
+
+		// Skip files with ._ prefix
+		if strings.HasPrefix(d.Name(), "._") {
+			return nil
+		}
+
+		if strings.HasSuffix(path, "."+extension) {
+			files = append(files, d.Name())
+			return nil
+		}
+
+		return nil
+	})
+	return files, err
 }
