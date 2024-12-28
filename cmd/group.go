@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/merensoft/merenpic/models"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -63,11 +64,16 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 
 	fmt.Printf("Found %d json files in the folder\n", len(jsonFiles))
 
+	bar := progressbar.NewOptions(len(jsonFiles),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionSetWidth(100),
+		progressbar.OptionSetSpinnerChangeInterval(10*time.Millisecond),
+		progressbar.OptionSetDescription("Moving files..."),
+	)
+
 	// open each json file and read the metadata, the photo taken photoTakenTime and move the file to the subdirectory
 	// with the following format: photos-<year>-<month> e.g. photos-2021-01
 	for _, file := range jsonFiles {
-		fmt.Printf("Processing file: %s\n", file)
-
 		filePath := fmt.Sprintf("%s/%s", groupFlags.folder, file)
 
 		// open file
@@ -84,7 +90,7 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 
 		if metadata.PhotoTakenTime == nil {
 			if metadata.CreationTime.Timestamp == "" {
-				fmt.Println("No photo taken time found, skipping...")
+				fmt.Println("\nNo photo taken time found, skipping...")
 				continue
 			} else {
 				photoTakenTime = metadata.CreationTime.Timestamp
@@ -112,7 +118,7 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		photoFilePath := fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
 
 		if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
-			fmt.Printf("Photo file: %s does not exist, skipping...\n", photoFilePath)
+			fmt.Printf("\nPhoto file: %s does not exist, skipping...\n", photoFilePath)
 			continue
 		}
 
@@ -124,8 +130,9 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		err = os.Rename(filePath, fmt.Sprintf("%s/%s", subDirName, file))
 		ExitIfError(err)
 
-		fmt.Printf("Moved file: %s to subdirectory: %s\n", file, subDirName)
+		err = bar.Add(1)
+		ExitIfError(err)
 	}
 
-	fmt.Println("Group Command Completed")
+	fmt.Println("\nGroup Command Completed")
 }
