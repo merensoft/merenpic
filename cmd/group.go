@@ -57,6 +57,8 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		progressbar.OptionSetDescription("Moving files..."),
 	)
 
+	filesWithError := make([]string, 0)
+
 	// open each json file and read the metadata, the photo taken photoTakenTime and move the file to the subdirectory
 	// with the following format: photos-<year>-<month> e.g. photos-2021-01
 	for _, file := range jsonFiles {
@@ -118,11 +120,11 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 				photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
 
 				if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
-					fmt.Printf("\nPhoto file: %s does not exist, skipping...\n", photoFilePath)
+					filesWithError = append(filesWithError, file)
 					continue
 				}
 			} else {
-				fmt.Printf("\nPhoto file: %s does not exist, skipping...\n", photoFilePath)
+				filesWithError = append(filesWithError, file)
 				continue
 			}
 		}
@@ -141,6 +143,13 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 	ExitIfError(bar.Finish())
 
 	fmt.Println("\nGroup Command Completed")
+
+	if len(filesWithError) > 0 {
+		fmt.Println("Files with error:")
+		for _, file := range filesWithError {
+			fmt.Println(file)
+		}
+	}
 }
 
 func walkDir(root string, extension string) ([]string, error) {
