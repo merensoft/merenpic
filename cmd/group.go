@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -103,14 +104,17 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		photoFilePath := fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
 
 		if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
-			// edge case where the photo name has (1) suffix
-			// example photo(1).jpg and photo.jpg(1).json
-			// we should be able to handle this case, by moving the photo with (1) suffix
-			// and moving json with better subfix: photo(1).jpg.json
-			if strings.Contains(file, "(1).json") {
-				photoName = strings.TrimSuffix(photoName, "(1)")
+			// edge case where the photo name has (n) suffix
+			// example photo(1).jpg and photo.jpg(n).json
+			// we should be able to handle this case, by moving the photo with (n) suffix
+			// and moving json with better suffix: photo(n).jpg.json
+			re := regexp.MustCompile(`\((\d+)\)\.json$`)
+			matches := re.FindStringSubmatch(file)
+			if len(matches) > 0 {
+				suffix := matches[1]
+				photoName = strings.TrimSuffix(file, fmt.Sprintf("(%s).json", suffix))
 				splitName := strings.Split(photoName, ".")
-				photoName = fmt.Sprintf("%s(1).%s", splitName[0], splitName[1])
+				photoName = fmt.Sprintf("%s(%s).%s", splitName[0], suffix, splitName[1])
 				photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
 
 				if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
