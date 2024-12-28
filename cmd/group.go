@@ -89,7 +89,7 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		unixTime, err := strconv.ParseInt(photoTakenTime, 10, 64)
 		ExitIfError(err)
 
-		photoTime := time.Unix(unixTime, 0)
+		photoTime := time.Unix(unixTime, 0).UTC()
 
 		// create the subdirectory if it does not exist
 		subDirName := fmt.Sprintf("%s/photos_%d_%02d", groupFlags.folder, photoTime.Year(), int(photoTime.Month()))
@@ -135,9 +135,10 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		err = os.Rename(filePath, fmt.Sprintf("%s/%s.json", subDirName, photoName))
 		ExitIfError(err)
 
-		err = bar.Add(1)
-		ExitIfError(err)
+		ExitIfError(bar.Add(1))
 	}
+
+	ExitIfError(bar.Finish())
 
 	fmt.Println("\nGroup Command Completed")
 }
