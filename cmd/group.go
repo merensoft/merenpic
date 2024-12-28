@@ -3,9 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -125,23 +123,27 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 }
 
 func walkDir(root string, extension string) ([]string, error) {
-	var files []string
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			return nil
+	files := make([]string, 0)
+
+	allFiles, err := os.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, file := range allFiles {
+		if file.IsDir() {
+			continue
 		}
 
 		// Skip files with ._ prefix
-		if strings.HasPrefix(d.Name(), "._") {
-			return nil
+		if strings.HasPrefix(file.Name(), "._") {
+			continue
 		}
 
-		if strings.HasSuffix(path, "."+extension) {
-			files = append(files, d.Name())
-			return nil
+		if strings.HasSuffix(file.Name(), "."+extension) {
+			files = append(files, file.Name())
 		}
+	}
 
-		return nil
-	})
 	return files, err
 }

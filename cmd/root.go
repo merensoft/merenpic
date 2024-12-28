@@ -10,7 +10,7 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:     "merenpic",
-	Version: "0.1.1",
+	Version: "0.1.2",
 	Short:   "Merenpic CLI tool",
 	Long:    `Merenpic is a CLI tool that help you organize your photos and videos from a Google Photos takeout.`,
 }
