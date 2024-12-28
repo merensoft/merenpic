@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -21,4 +22,17 @@ func Execute() {
 	if err != nil {
 		os.Exit(1)
 	}
+}
+
+// shared functions
+
+func ExitIfError(err error) {
+	if err != nil {
+		PrintErrorAndExit(err)
+	}
+}
+
+func PrintErrorAndExit(err error) {
+	fmt.Println(err)
+	os.Exit(1)
 }
