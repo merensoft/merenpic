@@ -124,8 +124,13 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 					continue
 				}
 			} else {
-				filesWithError = append(filesWithError, file)
-				continue
+				// another edge case, where the photo file exists with the title
+				photoName = metadata.Title
+				photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
+				if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
+					filesWithError = append(filesWithError, file)
+					continue
+				}
 			}
 		}
 
