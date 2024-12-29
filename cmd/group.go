@@ -116,6 +116,11 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 				suffix := matches[1]
 				photoName = strings.TrimSuffix(file, fmt.Sprintf("(%s).json", suffix))
 				splitName := strings.Split(photoName, ".")
+				if len(splitName) != 2 {
+					filesWithError = append(filesWithError, file)
+					continue
+				}
+
 				photoName = fmt.Sprintf("%s(%s).%s", splitName[0], suffix, splitName[1])
 				photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
 
