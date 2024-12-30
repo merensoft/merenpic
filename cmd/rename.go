@@ -134,11 +134,11 @@ func readJsonAndRenameFiles(folderPath string, fileName string, bar *progressbar
 
 	photoTime := time.Unix(unixTime, 0).UTC()
 
-	// format the new file name, example: IMG_2021_01_01_123055_001.jpg
+	// format the new file name, example: 2021_01_01_123055_001_IMG.jpg
 	subfix := 0
 	newPhotoName := ""
 	newPhotoPath := ""
-	prefix, fileType := getFileType(metadata.Title)
+	typeEnum, fileType := getFileType(metadata.Title)
 	day := photoTime.Day()
 	year := photoTime.Year()
 	month := int(photoTime.Month())
@@ -146,7 +146,7 @@ func readJsonAndRenameFiles(folderPath string, fileName string, bar *progressbar
 
 	for subfix < 1000 {
 		subfix++
-		newPhotoName = fmt.Sprintf("%s_%d_%02d_%02d_%s_%03d.%s", prefix, year, month, day, timeValue, subfix, fileType)
+		newPhotoName = fmt.Sprintf("%d_%02d_%02d_%s_%03d_%s.%s", year, month, day, timeValue, subfix, typeEnum, fileType)
 		newPhotoPath = fmt.Sprintf("%s/%s", folderPath, newPhotoName)
 		if FileExists(newPhotoPath) {
 			// file exists, try the next subfix
