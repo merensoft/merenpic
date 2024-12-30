@@ -105,7 +105,7 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		// check if the photo file exists
 		photoName := strings.TrimSuffix(file, ".json")
 		photoFilePath := fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
-		if fileExists(photoFilePath) {
+		if FileExists(photoFilePath) {
 			moveFiles(subDirName, filePath, photoFilePath, photoName)
 			ExitIfError(bar.Add(1))
 			continue
@@ -161,7 +161,7 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		// another edge case, where the photo file exists with the title
 		photoName = metadata.Title
 		photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
-		if fileExists(photoFilePath) {
+		if FileExists(photoFilePath) {
 			moveFiles(subDirName, filePath, photoFilePath, photoName)
 			ExitIfError(bar.Add(1))
 			continue
@@ -185,7 +185,7 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func fileExists(filePath string) bool {
+func FileExists(filePath string) bool {
 	_, err := os.Stat(filePath)
 	return !os.IsNotExist(err)
 }
