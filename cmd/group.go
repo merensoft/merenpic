@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -104,48 +105,70 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 		// check if the photo file exists
 		photoName := strings.TrimSuffix(file, ".json")
 		photoFilePath := fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
-
-		if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
-			// edge case where the photo name has (n) suffix
-			// example photo(1).jpg and photo.jpg(n).json
-			// we should be able to handle this case, by moving the photo with (n) suffix
-			// and moving json with better suffix: photo(n).jpg.json
-			re := regexp.MustCompile(`\((\d+)\)\.json$`)
-			matches := re.FindStringSubmatch(file)
-			if len(matches) > 0 {
-				suffix := matches[1]
-				photoName = strings.TrimSuffix(file, fmt.Sprintf("(%s).json", suffix))
-				splitName := strings.Split(photoName, ".")
-				if len(splitName) != 2 {
-					filesWithError = append(filesWithError, file)
-					continue
-				}
-
-				photoName = fmt.Sprintf("%s(%s).%s", splitName[0], suffix, splitName[1])
-				photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
-
-				if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
-					filesWithError = append(filesWithError, file)
-					continue
-				}
-			} else {
-				// another edge case, where the photo file exists with the title
-				photoName = metadata.Title
-				photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
-				if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
-					filesWithError = append(filesWithError, file)
-					continue
-				}
-			}
+		if fileExists(photoFilePath) {
+			moveFiles(subDirName, filePath, photoFilePath, photoName)
+			ExitIfError(bar.Add(1))
+			continue
 		}
 
-		// move the photo file to the subdirectory
-		err = os.Rename(photoFilePath, fmt.Sprintf("%s/%s", subDirName, photoName))
-		ExitIfError(err)
+		// edge case where the photo name is longer that the metadata file name
+		// example PXL_123.LONG_EXPOSURE-02.ORIGINA.jpg and PXL_123.LONG_EXPOSURE-02.ORIGIN.json
+		// in this case we should search for a photo fie that start with the metadata file name
+		fileFinds, err := filepath.Glob(fmt.Sprintf("%s/%s*", groupFlags.folder, photoName))
+		if err == nil && len(fileFinds) == 2 {
+			// we found the photo file
+			photoName = metadata.Title
 
-		// move the metadata file to the subdirectory if photo file was moved
-		err = os.Rename(filePath, fmt.Sprintf("%s/%s.json", subDirName, photoName))
-		ExitIfError(err)
+			if strings.Contains(fileFinds[0], ".json") {
+				photoFilePath = fileFinds[1]
+			} else {
+				photoFilePath = fileFinds[0]
+			}
+
+			moveFiles(subDirName, filePath, photoFilePath, photoName)
+			ExitIfError(bar.Add(1))
+			continue
+		}
+
+		// edge case where the photo name has (n) suffix
+		// example photo(1).jpg and photo.jpg(n).json
+		// we should be able to handle this case, by moving the photo with (n) suffix
+		// and moving json with better suffix: photo(n).jpg.json
+		re := regexp.MustCompile(`\((\d+)\)\.json$`)
+		matches := re.FindStringSubmatch(file)
+		if len(matches) > 0 {
+			suffix := matches[1]
+			photoName = strings.TrimSuffix(file, fmt.Sprintf("(%s).json", suffix))
+			splitName := strings.Split(photoName, ".")
+			if len(splitName) != 2 {
+				filesWithError = append(filesWithError, file)
+				continue
+			}
+
+			photoName = fmt.Sprintf("%s(%s).%s", splitName[0], suffix, splitName[1])
+			photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
+
+			if _, err := os.Stat(photoFilePath); os.IsNotExist(err) {
+				filesWithError = append(filesWithError, file)
+				continue
+			}
+
+			moveFiles(subDirName, filePath, photoFilePath, photoName)
+			ExitIfError(bar.Add(1))
+			continue
+		}
+
+		// another edge case, where the photo file exists with the title
+		photoName = metadata.Title
+		photoFilePath = fmt.Sprintf("%s/%s", groupFlags.folder, photoName)
+		if fileExists(photoFilePath) {
+			moveFiles(subDirName, filePath, photoFilePath, photoName)
+			ExitIfError(bar.Add(1))
+			continue
+		}
+
+		// if we reach this point, we could not find the photo file
+		filesWithError = append(filesWithError, file)
 
 		ExitIfError(bar.Add(1))
 	}
@@ -160,6 +183,21 @@ func runGroupCommand(cmd *cobra.Command, _ []string) {
 			fmt.Println(file)
 		}
 	}
+}
+
+func fileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
+	return !os.IsNotExist(err)
+}
+
+func moveFiles(subDirName string, filePath string, photoFilePath string, photoName string) {
+	// move the photo file to the subdirectory
+	err := os.Rename(photoFilePath, fmt.Sprintf("%s/%s", subDirName, photoName))
+	ExitIfError(err)
+
+	// move the metadata file to the subdirectory if photo file was moved
+	err = os.Rename(filePath, fmt.Sprintf("%s/%s.json", subDirName, photoName))
+	ExitIfError(err)
 }
 
 func walkDir(root string, extension string) ([]string, error) {
