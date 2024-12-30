@@ -56,6 +56,8 @@ func runRenameCommand(cmd *cobra.Command, _ []string) {
 		progressbar.OptionSetDescription("Renaming files..."),
 	)
 
+	fmt.Printf("Found %d json files in the folder\n", nFiles)
+
 	renameFilesRecursively(renameFlags.folder, bar)
 
 	ExitIfError(bar.Finish())
@@ -94,6 +96,11 @@ func renameFilesRecursively(folder string, bar *progressbar.ProgressBar) {
 		if dirEntry.IsDir() {
 			renameFilesRecursively(fmt.Sprintf("%s/%s", folder, dirEntry.Name()), bar)
 		} else {
+			// Skip files with ._ prefix
+			if strings.HasPrefix(dirEntry.Name(), "._") {
+				continue
+			}
+
 			if strings.HasSuffix(dirEntry.Name(), ".json") {
 				readJsonAndRenameFiles(folder, dirEntry.Name(), bar)
 			}
